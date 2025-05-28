@@ -25,6 +25,7 @@
 - ✅ 任务列表
 - ✅ Emoji表情 :rocket:
 
+
 ## 📦 安装和设置
 
 ### 1. 克隆并安装依赖
@@ -235,6 +236,113 @@ API使用标准HTTP状态码和统一的错误格式：
 ## 🤝 贡献
 
 欢迎提交Issue和Pull Request来改进这个项目！
+
+### 🏗️ 技术架构图
+
+```mermaid
+graph LR
+    subgraph "客户端层"
+        A[HTTP请求<br/>JSON/FormData]
+        B[Markdown文件<br/>.md]
+    end
+    
+    subgraph "Express.js 服务器"
+        C[路由层<br/>markdown.ts]
+        D[中间件<br/>errorHandler.ts]
+        E[服务层<br/>htmlToNotionService.ts]
+    end
+    
+    subgraph "核心处理引擎"
+        F[Showdown<br/>Markdown解析器]
+        G[HTML解析器<br/>JSDOM]
+        H[Notion Blocks<br/>生成器]
+        I[图片验证器<br/>URL检查]
+    end
+    
+    subgraph "外部服务"
+        J[Notion API<br/>页面创建]
+        K[图片资源<br/>URL验证]
+    end
+    
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    E --> I
+    H --> J
+    I --> K
+    
+    style C fill:#e3f2fd
+    style E fill:#f3e5f5
+    style F fill:#e8f5e8
+    style J fill:#fff3e0
+    style I fill:#fce4ec
+```
+
+## 🔄 核心流程图
+
+```mermaid
+graph TD
+    A[📝 Markdown输入] --> B{输入类型}
+    B -->|文本内容| C[POST /api/markdown/sync]
+    B -->|文件上传| D[POST /api/markdown/upload]
+    
+    C --> E[验证API参数]
+    D --> F[解析上传文件]
+    F --> E
+    
+    E --> G{参数验证}
+    G -->|失败| H[❌ 返回400错误]
+    G -->|成功| I[🔄 Showdown转换]
+    
+    I --> J[Markdown → HTML]
+    J --> K[HTML解析器]
+    K --> L[提取元素]
+    
+    L --> M[🎨 格式处理]
+    M --> N[粗体/斜体/代码]
+    M --> O[标题/段落/列表]
+    M --> P[🖼️ 图片验证]
+    M --> Q[📊 表格转换]
+    
+    N --> R[生成Notion Blocks]
+    O --> R
+    P --> S{图片可访问?}
+    S -->|是| T[Image Block]
+    S -->|否| U[Callout Block]
+    T --> R
+    U --> R
+    Q --> V[格式化文本Block]
+    V --> R
+    
+    R --> W[🏗️ 创建Notion子页面]
+    W --> X[📦 分批处理Blocks]
+    X --> Y{Blocks > 100?}
+    Y -->|是| Z[分批上传]
+    Y -->|否| AA[单次上传]
+    
+    Z --> BB[批次1: 100个Blocks]
+    Z --> CC[批次2: 剩余Blocks]
+    BB --> DD[⏱️ 延迟200ms]
+    DD --> CC
+    
+    AA --> EE[✅ 创建成功]
+    CC --> EE
+    
+    EE --> FF[📊 统计结果]
+    FF --> GG[返回页面信息]
+    
+    GG --> HH[🎉 完成]
+    
+    style A fill:#e1f5fe
+    style I fill:#f3e5f5
+    style W fill:#e8f5e8
+    style EE fill:#e8f5e8
+    style HH fill:#fff3e0
+```
 
 ## 📄 许可证
 
